@@ -73,6 +73,12 @@ En "Nuevo proyecto QR" hay un selector **Subir archivo / URL externa**:
 
 > Nota: al agregar la subida a Drive, el Apps Script pide permiso adicional (acceso a Drive) la primera vez — tendrás que volver a autorizarlo desde **Implementar > Gestionar implementaciones** o creando una nueva implementación.
 
+**⚠️ Límite importante de Google Drive como almacenamiento: solo sirve para `video`.**
+Google marca todos los archivos de Drive con la cabecera `Cross-Origin-Resource-Policy: same-site`, así que el navegador **bloquea** cualquier `<video src>`, `fetch()` o `<model-viewer src>` que intente cargar un archivo de Drive directamente desde otro dominio (como el nuestro) — no es un bug de esta app, es una política de seguridad de Google que no se puede evitar desde el cliente.
+
+- **video**: cuando el recurso es de Drive, el visor detecta el enlace automáticamente y lo inserta con el **reproductor oficial embebido de Drive** (`<iframe src=".../preview">`), que sí es insertable cross-origin. Funciona, pero se ve el reproductor de Google (con su propia UI), no el `<video>` a pantalla completa normal.
+- **motion_flyer** (`.json` Lottie o `.webm` con alpha) y **modelo_3d** (`.glb`/`.gltf`): **no funcionan si se suben a Drive** — necesitan los bytes crudos del archivo (`fetch`/`model-viewer`), que Drive bloquea igual que a cualquier otro sitio. Para estos dos tipos, usa siempre **"URL externa"** con un archivo alojado en Firebase Storage, Cloudinary, o un bucket con CORS público.
+
 ## 4. Despliegue
 
 Cualquier hosting compatible con Next.js funciona (Render, Railway, Vercel, Netlify, VPS propio) — **con `GOOGLE_SCRIPT_URL`/`GOOGLE_SCRIPT_SECRET` configurados, "Subir archivo" ya no depende del filesystem del servidor** (va a Google Drive), así que el filesystem efímero de los hosts *serverless* deja de ser un problema para esa función.

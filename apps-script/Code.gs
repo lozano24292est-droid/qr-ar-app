@@ -150,7 +150,11 @@ function uploadFile_(input) {
   const blob = Utilities.newBlob(bytes, input.mimeType, input.filename);
   const file = getUploadsFolder_().createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return "https://drive.google.com/uc?export=download&id=" + file.getId();
+  // Nota: Drive marca sus archivos con Cross-Origin-Resource-Policy: same-site,
+  // así que un <video>/fetch() directo desde otro dominio queda bloqueado por el
+  // navegador. El enlace /preview usa el reproductor oficial embebido de Drive,
+  // que sí es insertable en un <iframe> cross-origin.
+  return "https://drive.google.com/file/d/" + file.getId() + "/preview";
 }
 
 function jsonResponse_(obj) {
