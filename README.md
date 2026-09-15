@@ -60,24 +60,27 @@ APP_BASE_URL=https://tu-dominio.com
 
 En "Nuevo proyecto QR" hay un selector **Subir archivo / URL externa**:
 
-- **Subir archivo**: sube el archivo directamente desde el panel (hasta 200MB). Se guarda en `public/uploads/` y la app genera la URL automáticamente. Extensiones permitidas por tipo:
+- **Subir archivo**: sube el archivo directamente desde el panel. Extensiones permitidas por tipo:
   - **video**: `.mp4`, `.webm`, `.mov`
   - **motion_flyer**: `.json` (Lottie/Bodymovin exportado desde After Effects) o `.webm` con canal alpha
   - **modelo_3d**: `.glb`, `.gltf`
-- **URL externa**: pega un enlace ya alojado en otro lado (Drive, YouTube, Firebase Storage, Cloudinary, etc.).
+- **URL externa**: pega un enlace ya alojado en otro lado (YouTube, Firebase Storage, Cloudinary, un Drive link directo, etc.).
 
-> ⚠️ **Importante sobre hosting**: los archivos subidos se guardan en el disco del servidor (`public/uploads/`). Esto funciona en cualquier hosting con **filesystem persistente** (VPS, Render, Railway, Google Cloud Run con volumen, tu propio servidor). **No funciona en Vercel/Netlify** ni otros hosts *serverless*, porque ahí el filesystem es efímero y se borra en cada despliegue — en esos casos usa la opción "URL externa" con un archivo ya subido a Drive/Firebase/Cloudinary. Ver sección 4.
+**¿Dónde se guarda "Subir archivo"?**
+
+- Si `GOOGLE_SCRIPT_URL`/`GOOGLE_SCRIPT_SECRET` están configurados (producción con Sheets): el archivo se envía al Apps Script ([`apps-script/Code.gs`](apps-script/Code.gs)) y se guarda en una carpeta de **tu Google Drive** llamada `QR-AR-VR-uploads`, con el enlace puesto en "cualquiera con el enlace puede ver". Esto es persistente — sobrevive redeploys y reinicios. Límite: **25MB** por archivo (limitación del tamaño de petición de Apps Script).
+- Si no hay Sheets configurado (desarrollo local): se guarda en `public/uploads/` del servidor. Límite: 200MB. **No uses este modo en producción** — en cualquier hosting con filesystem efímero (Render free, Vercel, Netlify, Railway sin volumen) los archivos se pierden en el próximo reinicio o redeploy, incluso minutos después de subirlos.
+
+> Nota: al agregar la subida a Drive, el Apps Script pide permiso adicional (acceso a Drive) la primera vez — tendrás que volver a autorizarlo desde **Implementar > Gestionar implementaciones** o creando una nueva implementación.
 
 ## 4. Despliegue
 
-Recomendado (soporta subir archivos desde el panel, filesystem persistente):
+Cualquier hosting compatible con Next.js funciona (Render, Railway, Vercel, Netlify, VPS propio) — **con `GOOGLE_SCRIPT_URL`/`GOOGLE_SCRIPT_SECRET` configurados, "Subir archivo" ya no depende del filesystem del servidor** (va a Google Drive), así que el filesystem efímero de los hosts *serverless* deja de ser un problema para esa función.
 
-- **Render** o **Railway**: conecta el repo de GitHub, comando de build `npm run build`, comando de start `npm start`, agrega las variables de `.env.local` en su panel, y monta un disco persistente en `/app/public/uploads` (Render: "Disks"; Railway: "Volumes") para que los archivos subidos no se pierdan al redeploy.
+- **Render** o **Railway**: conecta el repo de GitHub, comando de build `npm run build`, comando de start `npm start`, agrega las variables de `.env.local` en su panel.
 - **VPS propio**: `npm run build && npm start` detrás de un proxy (Nginx/Caddy) con PM2 o systemd.
 
-Si prefieres **Vercel/Netlify** (más simple, pero *serverless* — el filesystem no persiste), usa siempre la opción "URL externa" al crear proyectos, subiendo tus archivos antes a Google Drive, Firebase Storage o Cloudinary.
-
-En cualquier caso, configura las mismas variables de entorno de `.env.local` en el panel del proveedor. `APP_BASE_URL` debe ser el dominio final, ya que se usa para construir la URL que codifica cada QR.
+Configura las mismas variables de entorno de `.env.local` en el panel del proveedor. `APP_BASE_URL` debe ser el dominio final, ya que se usa para construir la URL que codifica cada QR.
 
 ```bash
 npm run build

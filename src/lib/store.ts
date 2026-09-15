@@ -134,6 +134,38 @@ class SheetsStore implements DataStore {
   }
 }
 
+export function isDriveUploadConfigured(): boolean {
+  return Boolean(process.env.GOOGLE_SCRIPT_URL && process.env.GOOGLE_SCRIPT_SECRET);
+}
+
+export async function uploadFileToDrive(
+  filename: string,
+  mimeType: string,
+  dataBase64: string
+): Promise<string> {
+  const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+  const secret = process.env.GOOGLE_SCRIPT_SECRET;
+  if (!scriptUrl || !secret) {
+    throw new Error("GOOGLE_SCRIPT_URL/GOOGLE_SCRIPT_SECRET no configurados");
+  }
+  const res = await fetch(scriptUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "uploadFile",
+      secret,
+      input: { filename, mimeType, dataBase64 },
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Apps Script error (${res.status}): ${await res.text()}`);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.url as string;
+}
+
 let store: DataStore | null = null;
 
 export function getStore(): DataStore {

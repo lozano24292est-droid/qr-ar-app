@@ -9,6 +9,7 @@
  */
 
 const SHEET_NAME = "proyectos";
+const UPLOADS_FOLDER_NAME = "QR-AR-VR-uploads";
 const SECRET = PropertiesService.getScriptProperties().getProperty("SHARED_SECRET");
 
 const COLUMNS = [
@@ -115,6 +116,11 @@ function doPost(e) {
         return jsonResponse_({ ok: true });
       }
 
+      case "uploadFile": {
+        const url = uploadFile_(body.input);
+        return jsonResponse_({ url: url });
+      }
+
       case "incrementScan": {
         const sheet = getSheet_();
         const rowIndex = findRowIndexById_(sheet, body.id);
@@ -131,6 +137,20 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse_({ error: String(err) });
   }
+}
+
+function getUploadsFolder_() {
+  const folders = DriveApp.getFoldersByName(UPLOADS_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(UPLOADS_FOLDER_NAME);
+}
+
+function uploadFile_(input) {
+  const bytes = Utilities.base64Decode(input.dataBase64);
+  const blob = Utilities.newBlob(bytes, input.mimeType, input.filename);
+  const file = getUploadsFolder_().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return "https://drive.google.com/uc?export=download&id=" + file.getId();
 }
 
 function jsonResponse_(obj) {
