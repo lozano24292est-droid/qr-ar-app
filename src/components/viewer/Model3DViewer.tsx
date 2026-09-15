@@ -23,7 +23,6 @@ export default function Model3DViewer({
         </div>
       )}
       {ready && (
-        // @ts-expect-error -- web component registered dynamically at runtime
         <model-viewer
           src={src}
           alt={nombre}
